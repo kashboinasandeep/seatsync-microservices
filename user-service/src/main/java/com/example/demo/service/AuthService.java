@@ -51,9 +51,8 @@
 	    public AuthResponse refreshToken(RefreshTokenRequest request) {
 	
 	        // 1. Validate refresh token and extract email
-	        String email = jwtService.validateRefreshToken(
-	                request.getRefreshToken()
-	        );
+	        String email = jwtService.validateRefreshToken(request.getRefreshToken()   );
+	     
 	
 	        // 2. Generate new access token
 	        String accessToken = jwtService.generateToken(email, "USER");
