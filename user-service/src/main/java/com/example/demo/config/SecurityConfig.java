@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -57,13 +56,13 @@ public class SecurityConfig {
         return configuration.getAuthenticationManager();
     }
 
-    // 3. Disable automatic servlet filter registration
+    // 3. Disable duplicate servlet filter registration
     @Bean
     public FilterRegistrationBean<JwtAuthenticationFilter>
-            jwtFilterRegistration(JwtAuthenticationFilter filter) {
+            jwtFilterRegistration() {
 
         FilterRegistrationBean<JwtAuthenticationFilter> registration =
-                new FilterRegistrationBean<>(filter);
+                new FilterRegistrationBean<>(jwtAuthenticationFilter);
 
         registration.setEnabled(false);
 
@@ -76,34 +75,27 @@ public class SecurityConfig {
             HttpSecurity http) throws Exception {
 
         http
-            // Disable CSRF for REST APIs
             .csrf(csrf -> csrf.disable())
 
-            // Stateless authentication
             .sessionManagement(session ->
                 session.sessionCreationPolicy(
                     SessionCreationPolicy.STATELESS
                 )
-            )	
-            
-            // Return 401 when the user is not authenticated
+            )
+
             .exceptionHandling(exception -> exception
-            	    .authenticationEntryPoint(
-            	        new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
-            	    )
-            	)
-            
-            
-            // Register authentication provider
+                .authenticationEntryPoint(
+                    new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
+                )
+            )
+
             .authenticationProvider(authenticationProvider())
 
-            // Register JWT filter
             .addFilterBefore(
                 jwtAuthenticationFilter,
                 UsernamePasswordAuthenticationFilter.class
             )
 
-            // Endpoint authorization
             .authorizeHttpRequests(auth -> auth
 
                 .requestMatchers(
