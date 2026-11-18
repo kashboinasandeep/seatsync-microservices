@@ -14,7 +14,7 @@ SeatSync is a microservices-based movie ticket booking platform built using Java
 | User Service | Registration, login, JWT authentication and protected profile | Implemented and manually tested |
 | Eureka Server | Service registration and discovery | Implemented; services registered locally |
 | API Gateway | Central routing to backend services | Implemented; user, authentication and movie routes tested |
-| Movie Service | Movie CRUD, validation, duplicate detection and exception handling | Implemented and manually tested |
+| Movie Service | Movie CRUD, validation, duplicate detection and exception handling | Completed — implemented and manually tested in Postman |
 | Theater Service | Theaters, screens, seats and showtimes | Planned |
 | Booking Service | Seat selection, reservations and cancellations | Planned |
 | Payment Service | Payment orders, verification and payment status | Planned |
