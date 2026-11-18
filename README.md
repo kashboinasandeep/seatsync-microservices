@@ -12,10 +12,10 @@ SeatSync is a microservices-based movie ticket booking platform built using Java
 | Component | Responsibility | Status |
 |---|---|---|
 | User Service | Registration, login, JWT authentication and protected profile | Implemented and manually tested |
-| Eureka Server | Service registration and discovery | Implemented; services registered locally |
-| API Gateway | Central routing to backend services | Implemented; user, authentication and movie routes tested |
-| Movie Service | Movie CRUD, validation, duplicate detection and exception handling | Completed — implemented and manually tested in Postman |
-| Theater Service | Theaters, screens, seats and showtimes | Planned |
+| Eureka Server | Service registration and discovery | Implemented; services configured for local registration |
+| API Gateway | Central routing to backend services | Implemented; user, authentication, movie and theater routes configured |
+| Movie Service | Movie CRUD, validation, duplicate detection and exception handling | Implemented and manually tested in Postman |
+| Theater Service | Theater CRUD, request validation and exception handling | Implemented; Eureka registration and Gateway route configured |
 | Booking Service | Seat selection, reservations and cancellations | Planned |
 | Payment Service | Payment orders, verification and payment status | Planned |
 | React Frontend | User interface and API integration | Planned |
@@ -47,10 +47,13 @@ flowchart TD
     G -->|Service discovery| E[Eureka Server :8761]
     G -->|lb://USER-SERVICE| U[User Service :8081]
     G -->|lb://MOVIE-SERVICE| M[Movie Service :8082]
+    G -->|lb://THEATER-SERVICE| T[Theater Service :8083]
     U --> UDB[(cineticket_user_db)]
     M --> MDB[(movie_service_db)]
+    T --> TDB[(theater_service_db)]
     U -. register .-> E
     M -. register .-> E
+    T -. register .-> E
 ```
 
 Eureka is used for service discovery. The API Gateway forwards incoming requests to registered service instances using load-balanced service names.
@@ -113,6 +116,41 @@ Eureka is used for service discovery. The API Gateway forwards incoming requests
 
 Error responses include a timestamp, HTTP status, error name and message. Validation responses also include field-level details.
 
+### 3. Theater Service
+
+**Port:** `8083`  
+**Database:** `theater_service_db`  
+**Gateway base path:** `/api/theaters`
+
+**Theater management capabilities**
+- Create a theater.
+- Retrieve all theaters.
+- Retrieve a theater by ID.
+- Update theater details.
+- Delete a theater.
+- Validate required request fields.
+- Validate six-digit pincode and ten-digit contact number formats.
+- Detect duplicate theater names (case-insensitive check).
+- Handle not-found, duplicate and request-validation errors centrally.
+- Register with Eureka for service discovery.
+
+**Theater entity fields**
+- ID and theater name.
+- Address, city, state and pincode.
+- Contact number and creation timestamp.
+
+**Theater Service API endpoints**
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/theaters` | Create theater |
+| GET | `/api/theaters` | Retrieve all theaters |
+| GET | `/api/theaters/{id}` | Retrieve theater by ID |
+| PUT | `/api/theaters/{id}` | Update theater |
+| DELETE | `/api/theaters/{id}` | Delete theater |
+
+The API Gateway route is configured to forward `/api/theaters/**` requests to the `THEATER-SERVICE` Eureka service.
+
 ## Local application ports
 
 | Application | Port |
@@ -121,30 +159,31 @@ Error responses include a timestamp, HTTP status, error name and message. Valida
 | API Gateway | 8080 |
 | User Service | 8081 |
 | Movie Service | 8082 |
+| Theater Service | 8083 |
 
 ## Running locally
 
 Typical startup sequence:
 
-1. Start MySQL.
+1. Start MySQL and ensure the service databases exist or can be created by the configured JPA settings.
 2. Start Eureka Server on port `8761`.
 3. Start User Service on port `8081`.
 4. Start Movie Service on port `8082`.
-5. Start API Gateway on port `8080`.
-6. Open `http://localhost:8761/` and verify service registration.
-7. Test APIs through Postman using `http://localhost:8080`.
+5. Start Theater Service on port `8083`.
+6. Start API Gateway on port `8080`.
+7. Open `http://localhost:8761/` and verify service registration.
+8. Test APIs through Postman using `http://localhost:8080`.
 
 Configure database credentials and JWT signing secrets using environment variables or an untracked local configuration file. Never commit passwords, signing secrets or tokens to GitHub. Rotate any credential that has previously been committed.
 
 ## Planned development roadmap
 
-1. Develop Theater Service for theaters, screens, seats and showtimes.
-2. Develop Booking Service with safe seat reservation and concurrency handling.
-3. Develop Payment Service and integrate Razorpay in test mode.
-4. Build the React frontend and integrate it with the API Gateway.
-5. Expand automated unit and integration test coverage.
-6. Add Docker support and deployment documentation.
-7. Deploy the services to AWS.
+1. Develop Booking Service with safe seat reservation, cancellation and concurrency handling.
+2. Develop Payment Service and integrate Razorpay in test mode.
+3. Build the React frontend and integrate it with the API Gateway.
+4. Expand automated unit and integration test coverage.
+5. Add Docker support and deployment documentation.
+6. Deploy the services to AWS.
 
 ## Data ownership and booking safety
 
@@ -155,9 +194,7 @@ Each microservice is intended to own its database/schema. Services should commun
 The project uses a feature-branch workflow:
 
 - `main` – stable integration branch.
-- `feature/user-service` – User Service development.
-- `feature/movie-service` – Movie Service development.
-- Future services will use their own feature branches.
+- Feature branches – separate development work for each service or feature (for example, `feature/movie-service` and `features/theater-service`).
 
 Changes are committed to feature branches, pushed to GitHub and merged into `main` through Pull Requests.
 
