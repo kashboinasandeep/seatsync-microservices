@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.example.demo.dto.MovieRequest;
 import com.example.demo.dto.MovieResponse;
 import com.example.demo.entity.Movie;
+import com.example.demo.exception.DuplicateMovieException;
 import com.example.demo.exception.MovieNotFoundException;
 import com.example.demo.repository.MovieRepository;
 
@@ -23,6 +24,13 @@ public MovieService(MovieRepository movieRepository) {
 
 	//create Movie
 	public MovieResponse createMovie(MovieRequest request) {
+		
+		if (movieRepository.existsByTitleIgnoreCase(request.getTitle())) {
+		        throw new DuplicateMovieException(
+		         "Movie already exists with title: " + request.getTitle()
+		        );
+		    }
+		
 	Movie movie = new Movie();
 	
 	movie.setTitle(request.getTitle());
