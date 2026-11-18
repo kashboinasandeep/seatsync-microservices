@@ -1,148 +1,165 @@
-# SeatSync
-### Movie Ticket Booking Platform | Microservices Architecture
+# SeatSync – Movie Ticket Booking Platform
 
 ![Project Status](https://img.shields.io/badge/status-active%20development-orange)
 ![Java](https://img.shields.io/badge/Java-21-blue)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.2-brightgreen)
 ![Database](https://img.shields.io/badge/Database-MySQL-blue)
 
-SeatSync is a movie ticket booking platform being developed with Java 21, Spring Boot, Spring Cloud, React.js and MySQL. The target architecture uses independently deployable services for users, movies, theaters, bookings and payments.
-
-> **Progress note (14 November 2026):** User Service, Eureka Server and API Gateway have been implemented in the local development environment and the end-to-end Gateway routes for registration, login and a JWT-protected profile request have been manually tested with Postman. The Eureka Server dashboard showed both USER-SERVICE and API-GATEWAY as UP. Check the repository branch before assuming every locally tested application has already been committed and pushed.
-
----
+SeatSync is a microservices-based movie ticket booking platform built using Java, Spring Boot, Spring Cloud and MySQL. The planned frontend is React.js. The platform is being developed as independently deployable services for users, movies, theaters, bookings and payments.
 
 ## Current implementation status
 
 | Component | Responsibility | Status |
 |---|---|---|
-| User Service | Registration, login, JWT access/refresh tokens, protected profile | Implemented and manually tested locally |
-| Eureka Server | Service registration and discovery | Running locally; User Service and API Gateway registered |
-| API Gateway | Central HTTP routing to backend services | Running locally; user and auth routes tested |
-| Movie Service | Movie catalogue, search and management | Next planned service; not started/confirmed |
+| User Service | Registration, login, JWT authentication and protected profile | Implemented and manually tested |
+| Eureka Server | Service registration and discovery | Implemented; services registered locally |
+| API Gateway | Central routing to backend services | Implemented; user, authentication and movie routes tested |
+| Movie Service | Movie CRUD, validation, duplicate detection and exception handling | Implemented and manually tested |
 | Theater Service | Theaters, screens, seats and showtimes | Planned |
 | Booking Service | Seat selection, reservations and cancellations | Planned |
 | Payment Service | Payment orders, verification and payment status | Planned |
 | React Frontend | User interface and API integration | Planned |
-| Automated test suite | JUnit 5, Mockito and integration tests | Further automated coverage pending |
-
-## Verified local API flow
-
-The following requests were sent through API Gateway on port 8080 using Postman:
-
-| Operation | Request | Result |
-|---|---|---|
-| Register | `POST /api/users/register` | `201 Created` |
-| Login | `POST /api/auth/login` | `200 OK` |
-| Protected profile | Existing profile GET endpoint with a Bearer access token | `200 OK` |
-
-### Local application ports
-
-| Application | Port | Eureka application name |
-|---|---:|---|
-| Eureka Server | 8761 | Registry server |
-| API Gateway | 8080 | `api-gateway` |
-| User Service | 8081 | `user-service` |
-
-### Request routing
-
-```mermaid
-flowchart TD
-    C[Postman / Client] -->|HTTP :8080| G[API Gateway]
-    G -->|Service discovery| E[Eureka Server :8761]
-    E -->|USER-SERVICE instance| G
-    G -->|Forward /api/users/** or /api/auth/**| U[User Service :8081]
-    U -->|JPA| DB[(cineticket_user_db)]
-```
-
-Eureka is the registry used for service discovery. The Gateway route IDs (for example, `auth-route`) are developer-chosen labels; both current routes target `lb://USER-SERVICE`.
-
-## User Service capabilities
-
-- User entity and Spring Data JPA repository
-- Registration request and response DTOs
-- Input validation for registration data
-- BCrypt password hashing
-- Duplicate-email handling
-- Login using Spring Security's AuthenticationManager and DaoAuthenticationProvider
-- JWT access-token and refresh-token generation
-- JWT authentication filter for protected requests
-- Protected profile endpoint
-- Refresh-token endpoint
-- Manual negative-path checks reported for missing, invalid and expired tokens, duplicate email and incorrect password
-
-**Security reminder:** Never commit database passwords, JWT signing secrets, access tokens or refresh tokens. Keep local secrets in environment variables or an untracked local configuration file. If a credential was ever committed, rotate it; deleting it from the latest file does not invalidate the exposed credential.
+| Automated tests | JUnit 5, Mockito and integration tests | Further automated coverage planned |
 
 ## Technology stack
 
-| Area | Technologies | Status |
-|---|---|---|
-| Language | Java 21 | In use |
-| Backend | Spring Boot, Spring MVC, REST APIs | In use |
-| Persistence | Spring Data JPA, Hibernate | In use |
-| Database | MySQL | In use for User Service |
-| Security | Spring Security, BCrypt, JWT (JJWT) | Implemented in User Service; manually tested |
-| Service discovery | Spring Cloud Netflix Eureka | Running locally |
-| API routing | Spring Cloud Gateway WebFlux | Running locally |
-| Load balancing | Spring Cloud LoadBalancer | Used by `lb://USER-SERVICE` routing |
-| Frontend | React.js, JavaScript, HTML, CSS | Planned |
-| Automated testing | JUnit 5, Mockito, Spring Boot Test | More coverage planned |
-| API testing | Postman | Used for manual endpoint verification |
-| Payments | Razorpay test mode | Planned |
-| Build and version control | Maven, Git, GitHub | In use |
-| Containerization and hosting | Docker, cloud hosting | Planned |
+| Area | Technologies |
+|---|---|
+| Language | Java 21 |
+| Backend | Spring Boot, Spring MVC, REST APIs |
+| Microservices | Spring Cloud, Netflix Eureka |
+| API Gateway | Spring Cloud Gateway |
+| Persistence | Spring Data JPA, Hibernate |
+| Database | MySQL |
+| Security | Spring Security, BCrypt, JWT (JJWT) |
+| API testing | Postman |
+| Automated testing | JUnit 5, Mockito, Spring Boot Test |
+| Build and version control | Maven, Git, GitHub |
+| Frontend | React.js, JavaScript, HTML, CSS (planned) |
+| Payments | Razorpay test mode (planned) |
+| Containerization and hosting | Docker and AWS (planned) |
 
-## Target microservices architecture
-
-The following is the intended end-state architecture. Only the User Service, Eureka Server and API Gateway have been confirmed implemented at this stage.
+## Architecture currently implemented
 
 ```mermaid
 flowchart TD
-    UI[React Frontend] --> GW[API Gateway]
-    GW --> US[User Service]
-    GW --> MS[Movie Service]
-    GW --> TS[Theater Service]
-    GW --> BS[Booking Service]
-    GW --> PS[Payment Service]
-    US -. register .-> EU[Eureka Discovery Server]
-    MS -. register .-> EU
-    TS -. register .-> EU
-    BS -. register .-> EU
-    PS -. register .-> EU
-    US --> UDB[(User DB)]
-    MS --> MDB[(Movie DB)]
-    TS --> TDB[(Theater DB)]
-    BS --> BDB[(Booking DB)]
-    PS --> PDB[(Payment DB)]
+    C[Client / Postman] -->|HTTP :8080| G[API Gateway]
+    G -->|Service discovery| E[Eureka Server :8761]
+    G -->|lb://USER-SERVICE| U[User Service :8081]
+    G -->|lb://MOVIE-SERVICE| M[Movie Service :8082]
+    U --> UDB[(cineticket_user_db)]
+    M --> MDB[(movie_service_db)]
+    U -. register .-> E
+    M -. register .-> E
 ```
 
-## Planned next steps
+Eureka is used for service discovery. The API Gateway forwards incoming requests to registered service instances using load-balanced service names.
 
-1. Create Movie Service as a separate Spring Boot application (planned port 8082).
-2. Configure its own MySQL database and Eureka client registration.
-3. Add a Gateway route for `/api/movies/**` after Movie Service is running.
-4. Build Theater Service for theaters, screens, seats and showtimes.
-5. Build Booking Service and implement transactional seat reservation with concurrency protection.
-6. Build Payment Service and integrate Razorpay in test mode.
-7. Build the React frontend and connect it to Gateway APIs.
-8. Add automated tests, Docker support and deployment documentation.
+## Implemented services
+
+### 1. User Service
+
+**Port:** `8081`  
+**Database:** `cineticket_user_db`
+
+- User registration and login.
+- BCrypt password hashing.
+- Spring Security authentication.
+- JWT access-token and refresh-token handling.
+- JWT authentication filter.
+- Protected user profile endpoint.
+- Duplicate email handling.
+
+### 2. Movie Service
+
+**Port:** `8082`  
+**Database:** `movie_service_db`  
+**Gateway base path:** `/api/movies`
+
+**Movie catalogue capabilities**
+- Create a movie.
+- Retrieve all movies.
+- Retrieve a movie by ID.
+- Update movie details.
+- Delete a movie.
+- Request DTO validation.
+- Duplicate movie-title detection (case-insensitive check).
+
+**Movie entity fields**
+- ID, title, description, genre and language.
+- Duration, release date and rating.
+- Poster URL and creation timestamp.
+
+**Movie Service API endpoints**
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/movies` | Create movie |
+| GET | `/api/movies` | Retrieve all movies |
+| GET | `/api/movies/{id}` | Retrieve movie by ID |
+| PUT | `/api/movies/{id}` | Update movie |
+| DELETE | `/api/movies/{id}` | Delete movie |
+
+**Centralized exception handling**
+
+| HTTP status | Exception / scenario | Meaning |
+|---|---|---|
+| 400 | `MethodArgumentNotValidException` | Request validation failed |
+| 400 | `HttpMessageNotReadableException` | Invalid JSON or request body |
+| 404 | `MovieNotFoundException` | Requested movie does not exist |
+| 409 | `DuplicateMovieException` | Movie title already exists |
+| 409 | `DataIntegrityViolationException` | Database constraint violation |
+| 500 | Generic `Exception` handler | Unexpected server error |
+
+Error responses include a timestamp, HTTP status, error name and message. Validation responses also include field-level details.
+
+## Local application ports
+
+| Application | Port |
+|---|---:|
+| Eureka Server | 8761 |
+| API Gateway | 8080 |
+| User Service | 8081 |
+| Movie Service | 8082 |
+
+## Running locally
+
+Typical startup sequence:
+
+1. Start MySQL.
+2. Start Eureka Server on port `8761`.
+3. Start User Service on port `8081`.
+4. Start Movie Service on port `8082`.
+5. Start API Gateway on port `8080`.
+6. Open `http://localhost:8761/` and verify service registration.
+7. Test APIs through Postman using `http://localhost:8080`.
+
+Configure database credentials and JWT signing secrets using environment variables or an untracked local configuration file. Never commit passwords, signing secrets or tokens to GitHub. Rotate any credential that has previously been committed.
+
+## Planned development roadmap
+
+1. Develop Theater Service for theaters, screens, seats and showtimes.
+2. Develop Booking Service with safe seat reservation and concurrency handling.
+3. Develop Payment Service and integrate Razorpay in test mode.
+4. Build the React frontend and integrate it with the API Gateway.
+5. Expand automated unit and integration test coverage.
+6. Add Docker support and deployment documentation.
+7. Deploy the services to AWS.
 
 ## Data ownership and booking safety
 
-Each microservice is intended to own its database/schema. Services should use APIs or messaging to communicate rather than directly querying another service's tables. Booking concurrency controls (for example, transactions and JPA optimistic locking with `@Version`) are planned and are **not yet implemented**.
+Each microservice is intended to own its database/schema. Services should communicate through APIs or messaging rather than directly querying another service's tables. Transactional seat reservation and concurrency protection are planned for Booking Service and are not yet implemented.
 
-## Local development notes
+## Git workflow
 
-Typical local startup order:
+The project uses a feature-branch workflow:
 
-1. Start MySQL.
-2. Start Eureka Server on port 8761.
-3. Start User Service on port 8081.
-4. Start API Gateway on port 8080.
-5. Open `http://localhost:8761/` and confirm the expected applications are UP.
-6. Run the Postman requests through `http://localhost:8080`.
+- `main` – stable integration branch.
+- `feature/user-service` – User Service development.
+- `feature/movie-service` – Movie Service development.
+- Future services will use their own feature branches.
 
-Use local environment variables for database and JWT secrets. Do not paste credentials into source files or commit them to Git.
+Changes are committed to feature branches, pushed to GitHub and merged into `main` through Pull Requests.
 
 ## Author
 
@@ -153,4 +170,4 @@ Java Full Stack Developer
 
 ---
 
-SeatSync is an ongoing portfolio project. Status labels distinguish locally verified functionality from future work and from code that has been committed to the repository.
+SeatSync is an ongoing portfolio project. The implementation status above describes the current project scope; planned components are not yet available.
